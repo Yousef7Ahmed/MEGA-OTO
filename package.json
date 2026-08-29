@@ -1,0 +1,23 @@
+{
+  "name": "mega-oto-integration",
+  "version": "0.1.0",
+  "description": "Integration backend: Mega Ai webhook -> OTO (and later Mrsool) shipment creation, with OTO status webhook receiver.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "register-oto-webhook": "node src/scripts/registerOtoWebhook.js",
+    "test-mega-api": "node src/scripts/testMegaApi.js",
+    "mega-diagnostic": "node src/scripts/megaApiDiagnostic.js",
+    "register-shipping-provider": "node src/scripts/registerShippingProvider.js",
+    "check-delivery-options": "node src/scripts/checkDeliveryOptions.js",
+    "check-qurayyat-coverage": "node src/scripts/checkQurayyatCoverage.js",
+    "test-all": "node src/scripts/runAllTests.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

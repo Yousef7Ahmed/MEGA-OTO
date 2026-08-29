@@ -1,0 +1,91 @@
+{
+  "45": {
+    "megaFullOrder": {
+      "id": 45,
+      "order_id": "020260827211902",
+      "status": "confirmed",
+      "payment_status": "Paid",
+      "payment_type": "cod",
+      "customer_id": 2,
+      "items": [
+        {
+          "product_id": 85,
+          "name": "منتج الأستاذ احمد",
+          "qty": 1,
+          "original_price": 100,
+          "final_price": 100,
+          "variant_id": 0,
+          "variant_name": "",
+          "weight": 0,
+          "image": "uploads/45/13_1787764480_IMG_3354.png",
+          "vendor": {
+            "id": 41,
+            "name": "Ynkkjbg",
+            "phone": "+966559595966",
+            "location": ""
+          }
+        }
+      ],
+      "delivery_address": {
+        "first_name": "Hsje",
+        "last_name": "Jsjjs",
+        "email": "ashaghor4910@gmail.com",
+        "phone": "0546785276",
+        "address": "طريق ابن سينا، Al Wahah",
+        "city_id": "5930",
+        "state_id": "2857",
+        "country_id": "194",
+        "postcode": "77454"
+      },
+      "product_price": 100,
+      "delivery_price": 0,
+      "tax_price": 0,
+      "coupon_price": 0,
+      "final_price": 100,
+      "tracking_number": null,
+      "tracking_url": null,
+      "shipping_carrier": null,
+      "delivery_comment": "",
+      "order_date": "2026-08-27 21:19:02",
+      "confirmed_date": "2026-08-27",
+      "shipped_date": "2026-08-27",
+      "delivery_date": "2026-08-27",
+      "cancel_date": null,
+      "created_at": "2026-08-27T21:19:02.000000Z",
+      "updated_at": "2026-08-27T16:40:26.000000Z"
+    },
+    "otoOrderPayload": {
+      "orderId": "45",
+      "payment_method": "paid",
+      "amount": 100,
+      "amount_due": 0,
+      "currency": "SAR",
+      "shippingAmount": 0,
+      "subtotal": 100,
+      "createShipment": false,
+      "customer": {
+        "name": "Hsje Jsjjs",
+        "mobile": "0546785276",
+        "email": "ashaghor4910@gmail.com",
+        "address": "طريق ابن سينا، Al Wahah",
+        "city": "Qurayyat",
+        "country": "SA"
+      },
+      "items": [
+        {
+          "name": "منتج الأستاذ احمد",
+          "price": 100,
+          "rowTotal": 100,
+          "quantity": 1,
+          "sku": "85"
+        }
+      ]
+    },
+    "otoResponse": {
+      "success": true,
+      "otoId": 36450070
+    },
+    "status": "sent_to_oto",
+    "updatedAt": "2026-08-27T16:40:31.259Z"
+  }
+}

@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mega-oto-integration
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      # Set these in Render Dashboard -> Environment:
+      # OTO_REFRESH_TOKEN
+      # OTO_BASE_URL        (default: https://api.tryoto.com/rest/v2)
+      # OTO_WEBHOOK_SECRET
+      # PUBLIC_BASE_URL     (your Render URL, e.g. https://mega-oto-integration.onrender.com)
+      # MEGA_API_KEY
+      # MEGA_BASE_URL       (default: https://megaa-tons.net/api/external)
+      # MEGA_WEBHOOK_SHARED_SECRET
+      # SHIPPING_ORIGIN_CITY  (default: Riyadh)
+      # SHIPPING_CALLBACK_SECRET
