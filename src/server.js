@@ -6,7 +6,16 @@ const megaWebhookRouter = require('./routes/megaWebhook');
 const otoWebhookRouter = require('./routes/otoWebhook');
 const shippingRateCallbackRouter = require('./routes/shippingRateCallback');
 
+const path = require('path');
+
 const app = express();
+
+// Serve static files from /public (includes checkout-fix.js)
+// Available at: https://YOUR-RENDER-URL/checkout-fix.js
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  maxAge: '5m',
+  setHeaders: (res) => res.setHeader('Access-Control-Allow-Origin', '*'),
+}));
 
 // IMPORTANT: Mega Ai's "Status Change" webhook mislabels its Content-Type
 // as x-www-form-urlencoded, but the body is actually a raw JSON string
@@ -54,7 +63,6 @@ app.get('/debug/orders', (req, res) => {
 });
 
 // Render.com pings the root path to keep the service alive on the free plan.
-// Returning 200 here prevents it from being marked as unhealthy.
 app.get('/', (req, res) => res.json({ status: 'ok', service: 'mega-oto-integration' }));
 
 app.listen(config.port, '0.0.0.0', () => {
