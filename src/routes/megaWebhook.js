@@ -3,6 +3,7 @@ const otoClient = require("../services/otoClient");
 const megaClient = require("../services/megaClient");
 const orderStore = require("../store/orderStore");
 const { resolveDestinationCity } = require("../services/megaLocationMap");
+const shipmentNotifier = require("../services/shipmentNotifier");
 
 const router = express.Router();
 
@@ -113,10 +114,18 @@ router.post("/megaai/order", async (req, res) => {
 
     orderStore.saveOrder(orderId, {
       megaFullOrder: fullOrder,
+      // نحتفظ بالويب هوك الأصلي كمان — أحياناً بيكون فيه أرقام
+      // المشتري والبائع اللي مش موجودة في رد الـ API.
+      megaWebhookPayload: webhookPayload,
       otoOrderPayload,
       otoResponse,
       status: "sent_to_oto",
     });
+
+    // إشعار واتساب: الشحنة اتجهّزت
+    shipmentNotifier
+      .notifyStatusChange(orderId, { status: "created" })
+      .catch((err) => console.error("[whatsapp] إشعار الإنشاء فشل:", err.message));
 
     console.log(
       `[mega-webhook] Order ${orderId} successfully dispatched to OTO.`,

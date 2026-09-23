@@ -20,3 +20,5 @@ services:
       # MEGA_WEBHOOK_SHARED_SECRET
       # SHIPPING_ORIGIN_CITY  (default: Riyadh)
       # SHIPPING_CALLBACK_SECRET
+      # WAFINAL_BASE_URL / WAFINAL_API_TOKEN / WAFINAL_INSTANCE_ID
+      #   (php artisan whatsapp:wafinal-creds --slug=hujj)

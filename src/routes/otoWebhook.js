@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const config = require('../config');
 const orderStore = require('../store/orderStore');
 const megaClient = require('../services/megaClient');
+const shipmentNotifier = require('../services/shipmentNotifier');
 
 const router = express.Router();
 
@@ -96,6 +97,12 @@ router.post('/oto/status', (req, res) => {
   // regardless of whether that push succeeds.
   tryPushToMega(String(payload.orderId), payload);
 
+  // إشعارات واتساب للمشتري والبائع — بتتنفّذ في الخلفية،
+  // وأي فشل فيها ما بيأثرش على الرد لأوتو.
+  shipmentNotifier
+    .notifyStatusChange(String(payload.orderId), payload)
+    .catch((err) => console.error('[whatsapp] إشعار فشل:', err.message));
+
   return res.status(200).json({ success: true });
 });
 
@@ -108,6 +115,10 @@ router.post('/oto/shipment-error', (req, res) => {
     errorMessage,
     deliveryCompanyResponse,
   });
+
+  shipmentNotifier
+    .notifyStatusChange(String(orderId), { status: 'failed', errorMessage })
+    .catch((err) => console.error('[whatsapp] إشعار فشل:', err.message));
 
   return res.status(200).json({ success: true });
 });
