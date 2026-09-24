@@ -42,12 +42,20 @@ async function mapMegaOrderToOtoOrder(order) {
     );
   }
 
+  // ميجا بتحط payment_status = "Paid" لكل الطلبات حتى الدفع عند الاستلام،
+  // فالمرجع الصح هو payment_type ("cod" = دفع عند الاستلام).
+  const paymentType = String(order.payment_type || "").toLowerCase();
+  const isCod =
+    paymentType === "cod" ||
+    paymentType.includes("cash") ||
+    (!paymentType && order.payment_status !== "Paid");
+  const finalPrice = Number(order.final_price ?? 0);
+
   return {
     orderId: String(order.id ?? order.order_id ?? ""),
-    payment_method: order.payment_status === "Paid" ? "paid" : "cod",
-    amount: Number(order.final_price ?? 0),
-    amount_due:
-      order.payment_status === "Paid" ? 0 : Number(order.final_price ?? 0),
+    payment_method: isCod ? "cod" : "paid",
+    amount: finalPrice,
+    amount_due: isCod ? finalPrice : 0,
     currency: "SAR",
     shippingAmount: Number(order.delivery_price ?? 0),
     subtotal: Number(order.product_price ?? 0),

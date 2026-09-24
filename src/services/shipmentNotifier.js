@@ -127,7 +127,23 @@ function extractContacts(orderRecord) {
   // الشكل الجديد من ميجا (ship_to / buyer / vendors)
   const shipTo  = full.ship_to || full.delivery_address || {};
   const buyer   = full.buyer || {};
-  const vendors = Array.isArray(full.vendors) ? full.vendors : [];
+
+  // البائعين: من vendors[] (ويب هوك الطلب الجديد) أو من items[].vendor (رد الـ API
+  // وويب هوك "Status Change") — مع منع تكرار نفس الرقم.
+  const vendorList = [
+    ...(Array.isArray(full.vendors) ? full.vendors : []),
+    ...(Array.isArray(full.items) ? full.items : [])
+      .map((item) => item && item.vendor)
+      .filter(Boolean)
+      .map((v) => ({ phone: v.phone, store_name: v.name })),
+  ];
+  const seenPhones = new Set();
+  const vendors = vendorList.filter((v) => {
+    const key = whatsapp.normalizePhone(v && v.phone);
+    if (!key || seenPhones.has(key)) return false;
+    seenPhones.add(key);
+    return true;
+  });
 
   const buyerPhone =
     buyer.phone ||
