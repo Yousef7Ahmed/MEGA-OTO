@@ -25,10 +25,15 @@ async function mapMegaOrderToOtoOrder(order) {
   }
 
   const items = Array.isArray(order.items) ? order.items : [];
-  const totalWeight = items.reduce(
+  const totalQty = items.reduce((sum, item) => sum + (Number(item.qty) || 1), 0) || 1;
+  let totalWeight = items.reduce(
     (sum, item) => sum + (Number(item.weight) || 0) * (Number(item.qty) || 1),
     0,
   );
+  // منتجات من غير وزن متسجّل — تقدير بعدد القطع (نفس حساب أسعار الشحن)
+  if (!totalWeight || totalWeight <= 0) {
+    totalWeight = totalQty * (Number(process.env.SHIPPING_FALLBACK_ITEM_WEIGHT) || 0.5);
+  }
 
   const customerName =
     `${address.first_name ?? ""} ${address.last_name ?? ""}`.trim() ||
@@ -59,8 +64,15 @@ async function mapMegaOrderToOtoOrder(order) {
     currency: "SAR",
     shippingAmount: Number(order.delivery_price ?? 0),
     subtotal: Number(order.product_price ?? 0),
-    weight: totalWeight > 0 ? totalWeight : 1,
+    // اسم الحقل عند أوتو packageWeight (كنا بنبعت weight بس فكان بيوصل من غير وزن)
+    packageWeight: Math.round(totalWeight * 1000) / 1000,
+    weight: Math.round(totalWeight * 1000) / 1000,
+    packageCount: 1,
     createShipment: process.env.OTO_CREATE_SHIPMENT === "true",
+    // كود عنوان الاستلام (المخزن/المتجر) من لوحة أوتو — لو فاضي أوتو بيختار تلقائي
+    ...(process.env.OTO_PICKUP_LOCATION_CODE
+      ? { pickupLocationCode: process.env.OTO_PICKUP_LOCATION_CODE }
+      : {}),
     customer: {
       name: customerName,
       mobile: customerPhone,
@@ -118,7 +130,13 @@ router.post("/megaai/order", async (req, res) => {
     }
 
     const otoOrderPayload = await mapMegaOrderToOtoOrder(fullOrder);
+    console.log(
+      `[mega-webhook] Sending order ${orderId} to OTO — city=${otoOrderPayload.customer.city}, ` +
+        `weight=${otoOrderPayload.packageWeight}kg, payment=${otoOrderPayload.payment_method}, ` +
+        `pickupLocation=${otoOrderPayload.pickupLocationCode || "(auto)"}, createShipment=${otoOrderPayload.createShipment}`,
+    );
     const otoResponse = await otoClient.createOrder(otoOrderPayload);
+    console.log(`[mega-webhook] OTO createOrder response for ${orderId}:`, JSON.stringify(otoResponse));
 
     orderStore.saveOrder(orderId, {
       megaFullOrder: fullOrder,

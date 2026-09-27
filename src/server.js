@@ -54,7 +54,27 @@ app.get("/health/oto-auth", async (req, res) => {
   }
 });
 
+// فيها بيانات العملاء (أسامي وأرقام) — محمية بمفتاح:
+//   /debug/orders?key=OTO_WEBHOOK_SECRET            ← كل الطلبات
+//   /debug/orders?key=OTO_WEBHOOK_SECRET&id=88      ← طلب واحد (وسبب فشل الشحنة لو فيه)
 app.get("/debug/orders", (req, res) => {
+  const secret = config.oto.webhookSecret;
+  if (!secret || req.query.key !== secret) {
+    return res.status(401).json({ success: false, error: "unauthorized" });
+  }
+  if (req.query.id) {
+    const order = orderStore.getOrder(String(req.query.id));
+    if (!order) return res.status(404).json({ success: false, error: "order not found" });
+    return res.json({
+      id: String(req.query.id),
+      status: order.status,
+      otoStatus: order.otoStatus,
+      shipmentError: order.errorMessage || null,
+      deliveryCompanyResponse: order.deliveryCompanyResponse || null,
+      shipmentErrorAt: order.shipmentErrorAt || null,
+      notifiedStatuses: order.notifiedStatuses || [],
+    });
+  }
   res.json(orderStore.getAllOrders());
 });
 

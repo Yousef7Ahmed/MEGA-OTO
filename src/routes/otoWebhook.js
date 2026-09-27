@@ -106,6 +106,11 @@ router.post('/oto/status', (req, res) => {
   return res.status(200).json({ success: true });
 });
 
+/*
+ * shipmentError = أوتو فشل يحجز الشحنة عند شركة الشحن (مشكلة إعدادات/حساب،
+ * مش إن الطلب اتسلّم وفشل). فالعميل ما يتبعتلوش "تعذّر التسليم" —
+ * التنبيه يروح لصاحب المتجر بالسبب عشان يصلّحه.
+ */
 router.post('/oto/shipment-error', (req, res) => {
   console.error('[oto-webhook] shipment error:', JSON.stringify(req.body));
   const { orderId, errorMessage, deliveryCompanyResponse } = req.body;
@@ -114,11 +119,12 @@ router.post('/oto/shipment-error', (req, res) => {
     status: 'shipment_error',
     errorMessage,
     deliveryCompanyResponse,
+    shipmentErrorAt: new Date().toISOString(),
   });
 
   shipmentNotifier
-    .notifyStatusChange(String(orderId), { status: 'failed', errorMessage })
-    .catch((err) => console.error('[whatsapp] إشعار فشل:', err.message));
+    .notifyAdminShipmentError(String(orderId), { errorMessage, deliveryCompanyResponse })
+    .catch((err) => console.error('[whatsapp] تنبيه الأدمن فشل:', err.message));
 
   return res.status(200).json({ success: true });
 });

@@ -40,6 +40,11 @@ module.exports = {
 
     defaultCountryCode: required('WHATSAPP_COUNTRY_CODE', '966'),
     storeName:          required('WHATSAPP_STORE_NAME', 'القريات'),
+
+    // أرقام صاحب المتجر/الإدارة (مفصولة بفاصلة) — بيوصلها تنبيه لو أوتو فشل
+    // يحجز شحنة، بدل ما العميل ياخد رسالة "تعذّر التسليم" غلط.
+    adminPhones: String(required('WHATSAPP_ADMIN_PHONES', ''))
+      .split(',').map((x) => x.trim()).filter(Boolean),
   },
 
   shipping: {

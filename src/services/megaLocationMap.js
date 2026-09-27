@@ -32,6 +32,8 @@ const FALLBACK_CITY_BY_STATE = {
   2859: 'Al Bahah',
   2860: 'Najran',
   2861: 'Buraidah',
+  // الجوف (زي ما بتبعته ميجا) — المتجر في القريات فأغلب العملاء منها
+  3162: 'Qurayyat',
 };
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours - city lists rarely change

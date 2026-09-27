@@ -28,6 +28,11 @@ function normalizeStatus(raw) {
   const s = String(raw || '').toLowerCase().replace(/[\s-]/g, '_');
   if (!s) return null;
 
+  // فشل حجز الشحنة عند شركة الشحن (مش فشل توصيل) — ده للإدارة بس
+  if (s.includes('error') || (s.includes('fail') && (s.includes('shipment') || s.includes('creat') || s.includes('book')))) {
+    return 'booking_failed';
+  }
+
   for (const entry of STATUS_MAP) {
     if (entry.match.some((m) => s.includes(m))) return entry.key;
   }
@@ -206,6 +211,10 @@ async function notifyStatusChange(orderId, payload) {
     return { skipped: 'unknown_status' };
   }
 
+  if (statusKey === 'booking_failed') {
+    return notifyAdminShipmentError(orderId, { errorMessage: payload.errorMessage || payload.status || payload.dcStatus });
+  }
+
   if (!config.whatsapp.enabled) {
     console.log('[whatsapp] الإشعارات متوقفة (WHATSAPP_ENABLED=false).');
     return { skipped: 'disabled' };
@@ -273,4 +282,40 @@ async function notifyStatusChange(orderId, payload) {
   return results;
 }
 
-module.exports = { notifyStatusChange, normalizeStatus, STATUS_LABEL_AR };
+/**
+ * أوتو فشل يحجز الشحنة عند شركة الشحن (shipmentError).
+ * ده مش فشل توصيل — فمبنبعتش حاجة للعميل، وبننبّه الإدارة بالسبب.
+ * ما بيرميش أبداً.
+ */
+async function notifyAdminShipmentError(orderId, { errorMessage, deliveryCompanyResponse } = {}) {
+  const reason = String(errorMessage || '').trim()
+    || (typeof deliveryCompanyResponse === 'string'
+      ? deliveryCompanyResponse
+      : JSON.stringify(deliveryCompanyResponse || {}));
+
+  console.warn(`[shipment-error] الطلب ${orderId} — أوتو ما قدرش يحجز الشحنة. السبب: ${reason || 'مش مذكور'}`);
+
+  const admins = config.whatsapp.adminPhones || [];
+  if (!config.whatsapp.enabled || admins.length === 0) {
+    if (admins.length === 0) {
+      console.log('[shipment-error] مفيش WHATSAPP_ADMIN_PHONES — التنبيه اتسجّل في اللوج بس.');
+    }
+    return { skipped: true };
+  }
+
+  const text = clean(`⚠️ تنبيه شحن — ${config.whatsapp.storeName}
+الطلب *${orderId}* اتسجّل في أوتو، لكن حجز الشحنة عند شركة الشحن فشل.
+السبب: ${String(reason || 'مش مذكور').slice(0, 500)}
+راجع الطلب من لوحة أوتو (app.tryoto.com) واحجز الشحنة يدويًا أو اختار شركة شحن تانية.
+(العميل ما اتبعتلوش أي رسالة فشل)`);
+
+  const results = [];
+  for (const phone of admins) {
+    const r = await whatsapp.notify({ to: phone, text });
+    results.push({ phone, ...r });
+    console.log(`[shipment-error] تنبيه الأدمن ${phone}:`, r.ok ? 'اتبعت ✅' : `فشل ❌ ${r.error}`);
+  }
+  return results;
+}
+
+module.exports = { notifyStatusChange, notifyAdminShipmentError, normalizeStatus, STATUS_LABEL_AR };
