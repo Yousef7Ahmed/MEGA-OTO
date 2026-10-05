@@ -16,6 +16,10 @@ module.exports = {
 
   publicBaseUrl: required('PUBLIC_BASE_URL'),
 
+  // مفتاح بتبعته المنصّة (Laravel) عشان تجيب رابط بوليصة الشحن.
+  // لو فاضي بنستخدم OTO_WEBHOOK_SECRET.
+  labelApiKey: required('LABEL_API_KEY', '') || required('OTO_WEBHOOK_SECRET', ''),
+
   mega: {
     webhookSharedSecret: required('MEGA_WEBHOOK_SHARED_SECRET', ''),
     // UNCONFIRMED - see services/megaClient.js for why.

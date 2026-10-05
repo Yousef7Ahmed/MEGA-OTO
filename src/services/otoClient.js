@@ -79,8 +79,27 @@ async function checkDeliveryFee(payload) {
   });
 }
 
+// رابط طباعة بوليصة الشحن (AWB) — GET /print/:orderId
+async function getPrintAwb(orderId) {
+  return authedRequest({
+    method: "get",
+    path: `/print/${encodeURIComponent(orderId)}`,
+  });
+}
+
+// تفاصيل الطلب عند أوتو (الحالة، رقم التتبّع، رابط البوليصة لو اتعملت)
+async function getOrderDetails(orderId) {
+  return authedRequest({
+    method: "get",
+    path: "/orderDetails",
+    params: { orderId },
+  });
+}
+
 module.exports = {
   healthCheck,
+  getPrintAwb,
+  getOrderDetails,
   createOrder,
   registerWebhook,
   listWebhooks,

@@ -87,6 +87,8 @@ router.post('/oto/status', (req, res) => {
     dcStatus: payload.dcStatus,
     trackingNumber: payload.trackingNumber,
     trackingUrl: payload.trackingUrl,
+    // رابط البوليصة بييجي في الويب هوك أول ما الشحنة تتحجز
+    ...(payload.printAWBURL ? { printAWBURL: payload.printAWBURL } : {}),
     deliveryCompany: payload.deliveryCompany,
     driverName: payload.driverName,
     driverPhone: payload.driverPhone,

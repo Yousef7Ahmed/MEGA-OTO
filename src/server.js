@@ -5,6 +5,7 @@ const orderStore = require("./store/orderStore");
 const megaWebhookRouter = require("./routes/megaWebhook");
 const otoWebhookRouter = require("./routes/otoWebhook");
 const shippingRateCallbackRouter = require("./routes/shippingRateCallback");
+const labelRouter = require("./routes/label");
 const path = require("path");
 
 const app = express();
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 app.use("/webhooks", megaWebhookRouter);
 app.use("/webhooks", otoWebhookRouter);
 app.use("/shipping", shippingRateCallbackRouter);
+app.use("/api", labelRouter);
 
 app.get("/health", async (req, res) => {
   try {
