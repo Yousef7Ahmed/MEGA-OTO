@@ -25,6 +25,14 @@ function localMobile(raw) {
   return d;
 }
 
+// أسماء المدن في المنصة فيها علامات (ā ī ʻ ') وأوتو بيكتبها حروف إنجليزي عادية
+function plainCityName(name) {
+  return String(name || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ʻʼ‘’'`]/g, "")
+    .replace(/\s+/g, " ").trim();
+}
+
 function vendorCity(vendor) {
   return (
     String(vendor.city_name || "").trim() ||
@@ -105,11 +113,14 @@ async function ensureVendorPickup(vendor) {
 
   let result = await upsert(payload);
 
-  // أوتو ما عرفش اسم المدينة؟ جرّب مدينة المنطقة المعروفة عنده
-  const fallbackCity = FALLBACK_CITY_BY_STATE[String(vendor.state_id)];
-  if (!result.ok && fallbackCity && fallbackCity !== payload.city) {
-    console.warn(`[pickup] ${code}: المدينة "${payload.city}" اترفضت — بنجرّب "${fallbackCity}".`);
-    payload = buildPayload(vendor, fallbackCity);
+  // أوتو ما عرفش اسم المدينة؟ جرّب الاسم من غير علامات (Ad Dawādimī → Ad Dawadimi)،
+  // وبعدها مدينة المنطقة المعروفة عنده
+  const tried = [payload.city];
+  for (const city of [plainCityName(payload.city), FALLBACK_CITY_BY_STATE[String(vendor.state_id)]]) {
+    if (result.ok || !city || tried.includes(city)) continue;
+    console.warn(`[pickup] ${code}: المدينة "${tried[tried.length - 1]}" اترفضت — بنجرّب "${city}".`);
+    tried.push(city);
+    payload = buildPayload(vendor, city);
     result = await upsert(payload);
   }
 
@@ -123,4 +134,4 @@ async function ensureVendorPickup(vendor) {
   return { ok: true, code, city: payload.city };
 }
 
-module.exports = { ensureVendorPickup, pickupCodeFor, localMobile, buildPayload, missingFields, _synced: synced };
+module.exports = { plainCityName, ensureVendorPickup, pickupCodeFor, localMobile, buildPayload, missingFields, _synced: synced };

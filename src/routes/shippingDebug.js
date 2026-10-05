@@ -162,14 +162,10 @@ router.get("/pickup", async (req, res) => {
       missing: vendorPickup.missingFields(vendor),
     };
     if (entry.missing.length === 0) {
-      const payload = vendorPickup.buildPayload(vendor);
-      entry.sentToOto = payload;
-      const create = await step(() => otoClient.createPickupLocation(payload));
-      entry.create = create.ok ? { ok: true, response: create.data } : create;
-      if (!create.ok) {
-        const update = await step(() => otoClient.updatePickupLocation(payload));
-        entry.update = update.ok ? { ok: true, response: update.data } : update;
-      }
+      // نفس اللي بيحصل مع الطلب الحقيقي (بيجرّب أسماء المدينة البديلة)
+      vendorPickup._synced.delete(vendorPickup.pickupCodeFor(vendor.id));
+      entry.result = await vendorPickup.ensureVendorPickup(vendor);
+      entry.firstPayload = vendorPickup.buildPayload(vendor);
     }
     out.vendors.push(entry);
   }
