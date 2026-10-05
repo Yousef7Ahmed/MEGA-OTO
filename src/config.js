@@ -25,6 +25,8 @@ module.exports = {
     // UNCONFIRMED - see services/megaClient.js for why.
     apiKey: required('MEGA_API_KEY', ''),
     baseUrl: required('MEGA_BASE_URL', 'https://megaa-tons.net/api/external'),
+    // دومين بنستخدمه لإيميل مكان الاستلام لو البائع ما عندوش إيميل
+    emailDomain: required('MEGA_EMAIL_DOMAIN', 'megaa-tons.net'),
   },
 
   mrsool: {

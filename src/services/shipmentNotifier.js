@@ -175,7 +175,8 @@ function extractContacts(orderRecord) {
 
 function buildContext(orderId, contacts, payload) {
   return {
-    orderId,
+    // "88-V41" (شحنة بائع) بتتعرض للعميل والبائع برقم الطلب الأصلي 88
+    orderId: String(orderId).replace(/-V\d+$/, ''),
     name: contacts.buyerName,
     buyerName: contacts.buyerName,   // مستقل — عشان رسالة البائع ما تستبدلهوش
     city: contacts.city,

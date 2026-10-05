@@ -7,6 +7,34 @@ const shipmentNotifier = require('../services/shipmentNotifier');
 
 const router = express.Router();
 
+// طلب أوتو "88-V41" = شحنة البائع 41 من طلب ميجا 88
+function parseOtoOrderId(otoOrderId) {
+  const m = /^(.+)-V(\d+)$/.exec(String(otoOrderId || ""));
+  return m ? { megaId: m[1], vendorId: m[2] } : { megaId: String(otoOrderId || ""), vendorId: null };
+}
+
+/**
+ * السيرفر بيفقد الذاكرة مع كل restart — لو بيانات الطلب مش عندنا نجيبها من ميجا
+ * (بمنتجات البائع صاحب الشحنة بس) عشان إشعارات الواتساب تكمل.
+ */
+async function ensureOrderRecord(otoOrderId) {
+  const record = orderStore.getOrder(otoOrderId);
+  if (record && record.megaFullOrder) return;
+  if (!config.mega.apiKey) return;
+  const { megaId, vendorId } = parseOtoOrderId(otoOrderId);
+  try {
+    const response = await megaClient.getOrder(megaId);
+    const full = response.data || response;
+    if (!full || !Array.isArray(full.items)) return;
+    const items = vendorId
+      ? full.items.filter((i) => i && i.vendor && String(i.vendor.id) === String(vendorId))
+      : full.items;
+    orderStore.saveOrder(otoOrderId, { megaOrderId: megaId, vendorId, megaFullOrder: { ...full, items } });
+  } catch (err) {
+    console.warn(`[oto-webhook] تعذّر جلب بيانات الطلب ${megaId} من ميجا:`, err.message);
+  }
+}
+
 /**
  * !! BEST-EFFORT / UNCONFIRMED !!
  * Maps an OTO status onto Mega Ai's documented status enum
@@ -97,12 +125,12 @@ router.post('/oto/status', (req, res) => {
 
   // Fire-and-log: try pushing to Mega Ai, but always answer OTO with 200
   // regardless of whether that push succeeds.
-  tryPushToMega(String(payload.orderId), payload);
+  tryPushToMega(parseOtoOrderId(payload.orderId).megaId, payload);
 
   // إشعارات واتساب للمشتري والبائع — بتتنفّذ في الخلفية،
   // وأي فشل فيها ما بيأثرش على الرد لأوتو.
-  shipmentNotifier
-    .notifyStatusChange(String(payload.orderId), payload)
+  ensureOrderRecord(String(payload.orderId))
+    .then(() => shipmentNotifier.notifyStatusChange(String(payload.orderId), payload))
     .catch((err) => console.error('[whatsapp] إشعار فشل:', err.message));
 
   return res.status(200).json({ success: true });
@@ -132,3 +160,4 @@ router.post('/oto/shipment-error', (req, res) => {
 });
 
 module.exports = router;
+module.exports.parseOtoOrderId = parseOtoOrderId;

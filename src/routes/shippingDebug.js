@@ -102,8 +102,18 @@ router.get("/shipping", async (req, res) => {
   }
 
   // 5) المحفظة
-  const credit = await step(() => otoClient.creditTransactions({ perPage: 5, page: 1 }));
+  const day = (d) => d.toISOString().slice(0, 10);
+  const credit = await step(() => otoClient.creditTransactions({
+    perPage: 5, page: 1,
+    minDate: day(new Date(Date.now() - 60 * 24 * 3600 * 1000)), maxDate: day(new Date(Date.now() + 24 * 3600 * 1000)),
+  }));
   out.wallet = credit.ok ? { raw: cut(credit.data, 1500) } : credit;
+
+  // أماكن الاستلام المسجّلة عند أوتو (V{رقم البائع} = عنوان بائع)
+  const pickups = await step(() => otoClient.getPickupLocationList({ status: "active" }));
+  out.pickupLocations = pickups.ok
+    ? [...(pickups.data.warehouses || []), ...(pickups.data.branches || [])].slice(0, 50).map((w) => ({ code: w.code, name: w.name, city: w.city }))
+    : pickups;
 
   // 6) محاولة حجز فعلية (اختياري)
   if (req.query.try === "1") {

@@ -68,10 +68,25 @@ router.get("/label/:orderId", async (req, res) => {
     return res.status(401).json({ success: false, reason: "unauthorized" });
   }
 
-  const orderId = String(req.params.orderId || "").trim();
-  if (!/^[A-Za-z0-9_-]{1,40}$/.test(orderId)) {
+  const megaOrderId = String(req.params.orderId || "").trim();
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(megaOrderId)) {
     return res.status(422).json({ success: false, reason: "bad_order_id" });
   }
+
+  // كل بائع له شحنته وبوليصته: "88-V41". الطلبات القديمة (قبل التقسيم) برقم الطلب نفسه.
+  const vendorId = String(req.query.vendor || "").trim();
+  const candidates = /^\d{1,12}$/.test(vendorId) ? [`${megaOrderId}-V${vendorId}`, megaOrderId] : [megaOrderId];
+
+  let last = null;
+  for (const orderId of candidates) {
+    last = await lookup(orderId);
+    if (last.success || last.exists) break;
+  }
+  const { exists, ...body } = last;
+  return res.json(body);
+});
+
+async function lookup(orderId) {
 
   const local = orderStore.getOrder(orderId) || {};
   let url = isUrl(local.printAWBURL) ? local.printAWBURL : null;
@@ -113,13 +128,14 @@ router.get("/label/:orderId", async (req, res) => {
 
   if (url) {
     orderStore.saveOrder(orderId, { printAWBURL: url });
-    return res.json({ success: true, url, trackingNumber, carrier, status });
+    return ({ success: true, exists: true, url, trackingNumber, carrier, status });
   }
 
   // مفيش رابط — نقول ليه
   if (local.status === "shipment_error") {
-    return res.json({
+    return ({
       success: false,
+      exists: true,
       reason: "shipment_error",
       message: String(local.errorMessage || local.deliveryCompanyResponse || "").slice(0, 300),
       status,
@@ -127,13 +143,14 @@ router.get("/label/:orderId", async (req, res) => {
   }
   const notFound = errors.some((e) => e.http === 404) && !detailsFound && !local.status;
   const allFailed = errors.length >= 2 && !errors.some((e) => e.http === 404 || e.http === 400);
-  return res.json({
+  return ({
     success: false,
+    exists: detailsFound || Boolean(local.status),
     reason: allFailed ? "oto_error" : notFound ? "not_found" : "not_ready",
     message: errors.map((e) => `${e.step}: ${e.message}`).join(" | ").slice(0, 300),
     status,
   });
-});
+}
 
 module.exports = router;
 module.exports.findLabelUrl = findLabelUrl;

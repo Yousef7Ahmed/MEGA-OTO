@@ -115,8 +115,24 @@ async function creditTransactions(params = {}) {
   return authedRequest({ method: "get", path: "/creditTransactions", params });
 }
 
+// أماكن الاستلام (عنوان كل بائع)
+async function createPickupLocation(payload) {
+  return authedRequest({ method: "post", path: "/createPickupLocation", data: payload });
+}
+
+async function updatePickupLocation(payload) {
+  return authedRequest({ method: "post", path: "/updatePickupLocation", data: payload });
+}
+
+async function getPickupLocationList(params = {}) {
+  return authedRequest({ method: "get", path: "/getPickupLocationList", params });
+}
+
 module.exports = {
   healthCheck,
+  createPickupLocation,
+  updatePickupLocation,
+  getPickupLocationList,
   createShipment,
   getDeliveryOptions,
   creditTransactions,
