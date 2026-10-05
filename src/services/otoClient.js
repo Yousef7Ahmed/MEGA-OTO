@@ -96,8 +96,30 @@ async function getOrderDetails(orderId) {
   });
 }
 
+// حجز شحنة لطلب موجود عند أوتو (deliveryOptionId اختياري)
+async function createShipment(orderId, deliveryOptionId) {
+  return authedRequest({
+    method: "post",
+    path: "/createShipment",
+    data: { orderId, ...(deliveryOptionId ? { deliveryOptionId: Number(deliveryOptionId) } : {}) },
+  });
+}
+
+// شركات الشحن المفعّلة في الحساب
+async function getDeliveryOptions() {
+  return authedRequest({ method: "get", path: "/getDeliveryOptions" });
+}
+
+// حركات المحفظة (الرصيد)
+async function creditTransactions(params = {}) {
+  return authedRequest({ method: "get", path: "/creditTransactions", params });
+}
+
 module.exports = {
   healthCheck,
+  createShipment,
+  getDeliveryOptions,
+  creditTransactions,
   getPrintAwb,
   getOrderDetails,
   createOrder,
