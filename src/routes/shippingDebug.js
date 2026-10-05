@@ -2,6 +2,8 @@ const express = require("express");
 const config = require("../config");
 const otoClient = require("../services/otoClient");
 const orderStore = require("../store/orderStore");
+const megaClient = require("../services/megaClient");
+const vendorPickup = require("../services/vendorPickup");
 
 const router = express.Router();
 
@@ -124,6 +126,54 @@ router.get("/shipping", async (req, res) => {
     out.createShipmentAttempt = "ما اتجرّبش — ضيف &try=1 عشان نحاول نحجز فعلاً ونشوف رد أوتو";
   }
 
+  res.json(out);
+});
+
+/**
+ * تشخيص مكان استلام البائع:
+ *   GET /debug/pickup?key=...&id=90
+ * بيجيب الطلب من ميجا، ويعرض بيانات عنوان كل بائع فيه زي ما وصلت،
+ * ويحاول يسجّل مكان الاستلام عند أوتو ويرجّع رد أوتو بالنص.
+ */
+router.get("/pickup", async (req, res) => {
+  const secret = config.oto.webhookSecret;
+  if (!secret || req.query.key !== secret) {
+    return res.status(401).json({ success: false, error: "unauthorized" });
+  }
+  const megaId = String(req.query.id || "").trim().replace(/-V\d+$/, "");
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(megaId)) {
+    return res.status(422).json({ success: false, error: "id مطلوب" });
+  }
+
+  const fetched = await step(() => megaClient.getOrder(megaId));
+  if (!fetched.ok) return res.json({ megaOrder: fetched });
+  const order = fetched.data.data || fetched.data;
+
+  const vendors = new Map();
+  for (const item of Array.isArray(order.items) ? order.items : []) {
+    if (item && item.vendor && item.vendor.id) vendors.set(String(item.vendor.id), item.vendor);
+  }
+
+  const out = { megaOrderId: megaId, vendors: [] };
+  for (const vendor of vendors.values()) {
+    const entry = {
+      fromMega: vendor,
+      apiHasAddressFields: Object.prototype.hasOwnProperty.call(vendor, "city_name"),
+      missing: vendorPickup.missingFields(vendor),
+    };
+    if (entry.missing.length === 0) {
+      const payload = vendorPickup.buildPayload(vendor);
+      entry.sentToOto = payload;
+      const create = await step(() => otoClient.createPickupLocation(payload));
+      entry.create = create.ok ? { ok: true, response: create.data } : create;
+      if (!create.ok) {
+        const update = await step(() => otoClient.updatePickupLocation(payload));
+        entry.update = update.ok ? { ok: true, response: update.data } : update;
+      }
+    }
+    out.vendors.push(entry);
+  }
+  if (vendors.size === 0) out.note = "الطلب مفيهوش منتجات بائعين";
   res.json(out);
 });
 
