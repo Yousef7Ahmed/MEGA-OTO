@@ -58,7 +58,10 @@ function buildPayload(vendor, cityOverride) {
 /** اللي ناقص في بيانات البائع عشان نقدر نعمله مكان استلام */
 function missingFields(vendor) {
   const missing = [];
-  if (!localMobile(vendor.phone)) missing.push("رقم الجوال");
+  const mobile = localMobile(vendor.phone);
+  if (!mobile) missing.push("رقم الجوال");
+  // شركات الشحن بتتواصل مع البائع على جوال سعودي (5XXXXXXXX)
+  else if (String(config.whatsapp.defaultCountryCode || "966") === "966" && !/^5\d{8}$/.test(mobile)) missing.push(`رقم جوال سعودي (المسجّل: ${vendor.phone})`);
   if (!vendorCity(vendor)) missing.push("المدينة");
   if (!String(vendor.address || vendor.area || vendor.location || "").trim()) missing.push("العنوان");
   return missing;
